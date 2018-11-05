@@ -49,6 +49,10 @@ if __name__ == '__main__':
 
     image = TfPoseEstimator.draw_humans(image, humans, imgcopy=False)
 
+    # Jie
+    # import matplotlib
+    # matplotlib.use('PS')
+    # Jie
     import matplotlib.pyplot as plt
 
     fig = plt.figure()
