@@ -5,7 +5,7 @@ import time
 import cv2
 import numpy as np
 
-from tf_pose.estimator import TfPoseEstimator
+from tf_pose.estimator import TfPoseEstimator, Human, BodyPart
 from tf_pose.networks import get_graph_path, model_wh
 
 logger = logging.getLogger('TfPoseEstimator-WebCam')
@@ -20,6 +20,7 @@ fps_time = 0
 
 
 if __name__ == '__main__':
+
     parser = argparse.ArgumentParser(description='tf-pose-estimation realtime webcam')
     parser.add_argument('--camera', type=int, default=0)
 
@@ -44,24 +45,109 @@ if __name__ == '__main__':
     ret_val, image = cam.read()
     logger.info('cam image=%dx%d' % (image.shape[1], image.shape[0]))
 
-    while True:
-        ret_val, image = cam.read()
+    # initialization
+    frame_idx = 0
+    total_frame_num = 5
+    sliding_frame_num = 2
+    body_parts_num = 18
+    actors = []
+    joints_list = []
 
+    # first load #total_frame_num-1 frames
+    for i in range(total_frame_num - 1):
+        frame_idx += 1
+
+        ret_val, image = cam.read()
         logger.debug('image process+')
         humans = e.inference(image, resize_to_default=(w > 0 and h > 0), upsample_size=args.resize_out_ratio)
 
-        logger.debug('postprocess+')
-        image = TfPoseEstimator.draw_humans(image, humans, imgcopy=False)
+        # choose one actor with maximum score
+        scores = []
+        for human_idx in range(len(humans)):
+            score = humans[human_idx].score
+            scores.append(score)
+        max_human_idx = scores.index(max(scores))
+        actor = humans[max_human_idx]
+        actors.append(actor)
 
-        logger.debug('show+')
-        cv2.putText(image,
-                    "FPS: %f" % (1.0 / (time.time() - fps_time)),
-                    (10, 10),  cv2.FONT_HERSHEY_SIMPLEX, 0.5,
-                    (0, 255, 0), 2)
-        cv2.imshow('tf-pose-estimation result', image)
-        fps_time = time.time()
-        if cv2.waitKey(1) == 27:
-            break
-        logger.debug('finished+')
+    while True:
+
+        frame_idx += 1
+
+        ret_val, image = cam.read()
+        logger.debug('image process+')
+        humans = e.inference(image, resize_to_default=(w > 0 and h > 0), upsample_size=args.resize_out_ratio)
+
+        # choose one actor with maximum score
+        scores = []
+        for human_idx in range(len(humans)):
+            score = humans[human_idx].score
+            scores.append(score)
+        max_human_idx = scores.index(max(scores))
+        actor = humans[max_human_idx]
+        actors.append(actor)
+
+        # average joints locations over #total_frame_num frames
+        # with steps of #sliding_frame_num frames
+        if not (frame_idx-total_frame_num) % sliding_frame_num:
+
+            avg_joints = []
+            show_human = Human([])
+
+            for p_idx in range(body_parts_num):
+            # for p_idx in sorted(body_parts.keys()):
+                joint = np.zeros(4)
+                idx_sum = 0
+
+                for i in range(frame_idx - total_frame_num, frame_idx):
+                    if p_idx not in actors[i].body_parts.keys():
+                        continue
+                    body_part = actors[i].body_parts[p_idx]
+                    joint += np.array([body_part.part_idx, body_part.x, body_part.y, body_part.score])
+                    idx_sum += 1
+
+                avg_joint = joint / idx_sum
+                avg_joints.append(avg_joint)
+
+                # show human with average joints locations
+                if not np.isnan(avg_joint[0]):
+                    part_idx = int(avg_joint[0])
+                    show_human.body_parts[part_idx] = BodyPart(
+                        '%d-%d' % (0, part_idx), part_idx,
+                        avg_joint[1], avg_joint[2], avg_joint[3]
+                    )
+
+            # show image with joints
+            logger.debug('postprocess+')
+            image = TfPoseEstimator.draw_humans(image, [show_human], imgcopy=False)
+            logger.debug('show+')
+            cv2.putText(image,
+                        "FPS: %f" % (1.0 / (time.time() - fps_time)),
+                        (10, 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                        (0, 255, 0), 2)
+            cv2.imshow('tf-pose-estimation result', image)
+            fps_time = time.time()
+            if cv2.waitKey(1) == 27:
+                break
+            logger.debug('finished+')
+
+        # save joints locations
+        joints_list.append(avg_joints)
+
+
+        # logger.debug('postprocess+')
+        # image = TfPoseEstimator.draw_humans(image, humans, imgcopy=False)
+        #
+        # logger.debug('show+')
+        # cv2.putText(image,
+        #             "FPS: %f" % (1.0 / (time.time() - fps_time)),
+        #             (10, 10),  cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+        #             (0, 255, 0), 2)
+        # cv2.imshow('tf-pose-estimation result', image)
+        # fps_time = time.time()
+        # if cv2.waitKey(1) == 27:
+        #     break
+        #
+        # logger.debug('finished+')
 
     cv2.destroyAllWindows()
