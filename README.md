@@ -21,7 +21,9 @@ Implemented features are listed here : [features](./etcs/feature.md)
 2018.2.7 Arguments in run.py script changed. Support dynamic input size.
 
 ## Body Joints Output Format (COCO)
-./etcs/keypoints_pose_18.png
+<p align="center">
+    <img src="./etcs/keypoints_pose_18.png", width="480">
+</p>
 
 ## Install
 
