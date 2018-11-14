@@ -51,7 +51,7 @@ if __name__ == '__main__':
     sliding_frame_num = 2
     body_parts_num = 18
     actors = []
-    joints_list = []
+    joints_list = [] # np.zeros(shape=(100, body_parts_num, 3), dtype=np.float32)
 
     # first load #total_frame_num-1 frames
     for i in range(total_frame_num - 1):
@@ -96,26 +96,28 @@ if __name__ == '__main__':
 
             for p_idx in range(body_parts_num):
             # for p_idx in sorted(body_parts.keys()):
-                joint = np.zeros(4)
+                joint = np.zeros(3, dtype=np.float32)
                 idx_sum = 0
 
                 for i in range(frame_idx - total_frame_num, frame_idx):
                     if p_idx not in actors[i].body_parts.keys():
                         continue
                     body_part = actors[i].body_parts[p_idx]
-                    joint += np.array([body_part.part_idx, body_part.x, body_part.y, body_part.score])
+                    joint += np.array([body_part.x, body_part.y, body_part.score])
                     idx_sum += 1
 
-                avg_joint = joint / idx_sum
-                avg_joints.append(avg_joint)
-
-                # show human with average joints locations
-                if not np.isnan(avg_joint[0]):
-                    part_idx = int(avg_joint[0])
-                    show_human.body_parts[part_idx] = BodyPart(
-                        '%d-%d' % (0, part_idx), part_idx,
-                        avg_joint[1], avg_joint[2], avg_joint[3]
+                if idx_sum:
+                    avg_joint = joint / idx_sum
+                    # show_human with average joints locations
+                    show_human.body_parts[p_idx] = BodyPart(
+                        '%d-%d' % (0, p_idx), p_idx,
+                        avg_joint[0], avg_joint[1], avg_joint[2]
                     )
+                else:
+                    avg_joint = joint
+
+                avg_joints.append(avg_joint)
+                # avg_joints_array = np.array(avg_joints, dtype=np.float32)
 
             # show image with joints
             logger.debug('postprocess+')
@@ -133,6 +135,7 @@ if __name__ == '__main__':
 
         # save joints locations
         joints_list.append(avg_joints)
+        # joints_list_array = np.array(joints_list, dtype=np.float32)
 
 
         # logger.debug('postprocess+')
