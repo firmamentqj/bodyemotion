@@ -8,6 +8,11 @@ WORD2CLASS={'NE': 0,
             'SA': 3,
             'HA': 4}
 
+def extractPoseRep( pose ):
+    # implementation need to be updated
+    return 0
+
+
 ## define read data
 def read_pose_data( pose_path, numb_classes ):
     poses = list([])
@@ -51,9 +56,17 @@ class buildTrainData:
         numb_samples = self.poses.shape[0]
         b_poses = poses[0:self.batch_size, ...]
         b_labels = labels[0:self.batch_size, ...]
-        yield b_poses, b_labels
+        #yield b_poses, b_labels
 
-        # for i in range(0, numb_samples, self.batch_size):
-        #     b_poses = poses[i*self.batch_size:(i+1)*self.batch_size,...]
-        #     b_labels = labels[i*self.batch_size:(i+1)*self.batch_size,...]
-        #     yield b_poses, b_labels
+        for i in range(0, numb_samples, self.batch_size):
+             b_poses = poses[i*self.batch_size:(i+1)*self.batch_size,...]
+             b_labels = labels[i*self.batch_size:(i+1)*self.batch_size,...]
+             yield b_poses, b_labels
+
+class Dataset():
+    def __int__(self, dataset, output_dim):
+        print('Initializing Dataset')
+        self._dataset = dataset
+        self.n_samples = dataset.n_samples
+        self._train = dataset.train
+        self._output = np.zeros
