@@ -63,10 +63,34 @@ class buildTrainData:
              b_labels = labels[i*self.batch_size:(i+1)*self.batch_size,...]
              yield b_poses, b_labels
 
-class Dataset():
-    def __int__(self, dataset, output_dim):
-        print('Initializing Dataset')
+class Dataset(object):
+    def __init__(self, dataset, output_dim, code_dim):
         self._dataset = dataset
         self.n_samples = dataset.n_samples
         self._train = dataset.train
-        self._output = np.zeros
+        self._output = np.zeros((self.n_samples, output_dim), dtype=np.float32)
+        self._codes = np.zeros((self.n_samples, code_dim), dtype=np.float32)
+        self._triplets = np.array([])
+        self._trip_index_in_epoch = 0
+        self._index_in_epoch = 0
+        self._epochs_complete = 0
+        self._perm = np.arange(self.n_samples)
+        np.random.shuffle(self._perm)
+        return
+
+    def next_batch(self, batch_size):
+        start = self._index_in_epoch
+        self._index_in_epoch += batch_size
+        if self._index_in_epoch > self.n_samples:
+            if self._train:
+                self._epochs_complete += 1
+                start = 0
+                self._index_in_epoch = batch_size
+            else:
+                # Validation stage only process once
+                start = self.n_samples - batch_size
+                self._index_in_epoch = self.n_samples
+        end = self._index_in_epoch
+
+        data, label = self._dataset.data(self._perm[start:end])
+        return data, label
