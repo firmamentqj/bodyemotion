@@ -532,6 +532,10 @@ class TfPoseEstimator:
         self.pafMat = pafMat_up[0]
         logger.debug('inference- heatMat=%dx%d pafMat=%dx%d' % (
             self.heatMat.shape[1], self.heatMat.shape[0], self.pafMat.shape[1], self.pafMat.shape[0]))
+        #######
+        print('inference- heatMat=%dx%d pafMat=%dx%d' % (
+            self.heatMat.shape[1], self.heatMat.shape[0], self.pafMat.shape[1], self.pafMat.shape[0]))
+        #######
 
         t = time.time()
         humans = PoseEstimator.estimate_paf(peaks, self.heatMat, self.pafMat)
