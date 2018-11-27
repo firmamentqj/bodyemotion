@@ -3,6 +3,7 @@ import logging
 import time
 import os
 import os.path as op
+from signal import SIGINT, SIGTERM
 
 import cv2
 import numpy as np
@@ -12,6 +13,7 @@ from tf_pose.estimator import TfPoseEstimator, Human, BodyPart
 from tf_pose.networks import get_graph_path, model_wh
 import models.penet as model
 from models.penet.configuration import configuration as config
+from utils import lbtoolbox as lb
 
 
 EMOTION = ['Neutral', 'Angry', 'Fearful', 'Sad', 'Happy']
@@ -63,9 +65,8 @@ if __name__ == '__main__':
     body_parts_num = 18
     frame_idx = 0
 
-
-    while True:
-        with open(op.join(config.root_dir, 'results', 'output.txt'), 'w' ) as fout:
+    with open(op.join(config.root_dir, 'results', 'output.txt'), 'w') as fout, lb.Uninterrupt( sigs=[SIGINT, SIGTERM], verbose=True) as u:
+        while True:
 
             frame_idx += 1
 
@@ -105,16 +106,16 @@ if __name__ == '__main__':
             predict_emotion = EMOTION[label]
             '''
             predictEmotion, confidence, CLASS2EMOTION = model.online_test(joint_array, is_reuse = flag_reuse)
+
             if frame_idx==1:
-                fout.write( "EMOTION\tCONFIDENCE\n\n" )
+                fout.write( "\"EMOTION\": CONFIDENCE\n\n" )
             fout.write("{")
             for kkk in range(len(confidence)):
                 if kkk>0:
-                    fout.write( "\t%s:%.06f"%(CLASS2EMOTION[kkk],confidence[kkk]) )
+                    fout.write( "  \"%s\":%.06f"%(CLASS2EMOTION[kkk],confidence[kkk]) )
                 else:
-                    fout.write( "%s:%.06f"%(CLASS2EMOTION[kkk],confidence[kkk]) )
+                    fout.write( "\"%s\":%.06f"%(CLASS2EMOTION[kkk],confidence[kkk]) )
             fout.write("}\n")
-            fout.flush()
 
 
 
@@ -132,6 +133,7 @@ if __name__ == '__main__':
             if cv2.waitKey(1) == 27:
                 break
             logger.debug('finished+')
-
-        fout.close()
-    cv2.destroyAllWindows()
+            if u.interrupted:
+                fout.close()
+        cv2.destroyAllWindows()
+    fout.close()
