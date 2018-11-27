@@ -272,5 +272,5 @@ class PEMLPNET(object):
         predict_label = np.argmax(score)
         predict_emotion = self.CLASS2WORD[predict_label]
 
-        return predict_emotion
+        return predict_emotion, np.squeeze(score), self.CLASS2WORD
 
