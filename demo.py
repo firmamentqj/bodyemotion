@@ -74,66 +74,95 @@ if __name__ == '__main__':
             logger.debug('image process+')
             humans = e.inference(image, resize_to_default=(w > 0 and h > 0), upsample_size=args.resize_out_ratio)
 
-            joint_list = []
-            for p_idx in range(body_parts_num):
-                joint = np.zeros(2, dtype=np.float32)
+            tmp_size = 0
 
-                if p_idx in humans[0].body_parts.keys():
-                    body_part = humans[0].body_parts[p_idx]
-                    joint += np.array([body_part.x, body_part.y])
-                joint_list.append(joint)
+            if not humans:
+                predictEmotion = 'NO human detected!'
+                logger.debug('show+')
+                cv2.putText(image,
+                            "Frame#{}    FPS: {}    Emotion: {}".format(frame_idx, 1.0 / (time.time() - fps_time),
+                                                                        predictEmotion),
+                            (40, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.99,
+                            (255, 255, 0), 2)
+                cv2.imshow('tf-pose-estimation result', image)
+                fps_time = time.time()
+                if cv2.waitKey(1) == 27:
+                    break
+                logger.debug('finished+')
 
-            joint_array = np.array(joint_list)
-            # np.save(os.path.join('./results', filename_save + ".npy"), joint_array)
-            ## add test module
-            joint_array=np.reshape( joint_array, [1,36] )
-            input_test = tf.placeholder( 'float32', shape=(None, 36) )
-            if frame_idx==1:
-                flag_reuse=False
             else:
-                flag_reuse=True
-            ''' 
-            peClassifier = PEMLPNET( input_test, 5, is_training=True, is_reuse=flag_reuse, name='PENET' )
-            predictionScore = peClassifier['prediction']
-            var_train  = tf.trainable_variables()
-            var_penet = [var for var in var_train if 'PENET' in var.name ]
-            penet_saver = tf.train.Saver( var_penet )
-            with tf.Session() as sess_penet:
-                penet_saver.restore(sess_penet, './models/PEMLPNET/checkpoint-100000')
-                feed_dict = {input_test: joint_array}
-                score = sess_penet.run( predictionScore, feed_dict = feed_dict )
-            label = np.argmax(score)
-            predict_emotion = EMOTION[label]
-            '''
-            predictEmotion, confidence, CLASS2EMOTION = model.online_test(joint_array, is_reuse = flag_reuse)
 
-            if frame_idx==1:
-                fout.write( "\"EMOTION\": CONFIDENCE\n\n" )
-            fout.write("{")
-            for kkk in range(len(confidence)):
-                if kkk>0:
-                    fout.write( "  \"%s\":%.06f"%(CLASS2EMOTION[kkk],confidence[kkk]) )
+                for human in humans:
+                    joint_list = []
+                    for p_idx in range(body_parts_num):
+                        joint = np.zeros(2, dtype=np.float32)
+                        if p_idx in human.body_parts.keys():
+                            body_part = human.body_parts[p_idx]
+                            joint += np.array([body_part.x, body_part.y])
+                        joint_list.append(joint)
+                    joint_array = np.array(joint_list)
+
+                    ## calculate human sizes
+                    x_array = joint_array[:, 0]
+                    y_array = joint_array[:, 1]
+                    min_x = np.min(x_array[np.nonzero(x_array)])
+                    max_x = np.max(x_array)
+                    min_y = np.min(y_array[np.nonzero(y_array)])
+                    max_y = np.max(y_array)
+                    human_size = (max_x - min_x) * (max_y - min_y)
+                    if human_size > tmp_size:
+                        final_joint_array = joint_array
+                        tmp_size = human_size
+
+                ## add test module
+                joint_array=np.reshape( final_joint_array, [1,36] )
+                input_test = tf.placeholder( 'float32', shape=(None, 36) )
+                if frame_idx==1:
+                    flag_reuse=False
                 else:
-                    fout.write( "\"%s\":%.06f"%(CLASS2EMOTION[kkk],confidence[kkk]) )
-            fout.write("}\n")
+                    flag_reuse=True
+                ''' 
+                peClassifier = PEMLPNET( input_test, 5, is_training=True, is_reuse=flag_reuse, name='PENET' )
+                predictionScore = peClassifier['prediction']
+                var_train  = tf.trainable_variables()
+                var_penet = [var for var in var_train if 'PENET' in var.name ]
+                penet_saver = tf.train.Saver( var_penet )
+                with tf.Session() as sess_penet:
+                    penet_saver.restore(sess_penet, './models/PEMLPNET/checkpoint-100000')
+                    feed_dict = {input_test: joint_array}
+                    score = sess_penet.run( predictionScore, feed_dict = feed_dict )
+                label = np.argmax(score)
+                predict_emotion = EMOTION[label]
+                '''
+                predictEmotion, confidence, CLASS2EMOTION = model.online_test(joint_array, is_reuse = flag_reuse)
+
+                if frame_idx==1:
+                    fout.write( "\"EMOTION\": CONFIDENCE\n\n" )
+                fout.write("{")
+                for kkk in range(len(confidence)):
+                    if kkk>0:
+                        fout.write( "  \"%s\":%.06f"%(CLASS2EMOTION[kkk],confidence[kkk]) )
+                    else:
+                        fout.write( "\"%s\":%.06f"%(CLASS2EMOTION[kkk],confidence[kkk]) )
+                fout.write("}\n")
 
 
 
 
-            logger.debug('postprocess+')
-            image = TfPoseEstimator.draw_humans(image, humans, imgcopy=False)
+                logger.debug('postprocess+')
+                image = TfPoseEstimator.draw_humans(image, humans, imgcopy=False)
 
-            logger.debug('show+')
-            cv2.putText(image,
-                        "Frame#{}    FPS: {}    Emotion: {}".format(frame_idx, 1.0 / (time.time() - fps_time), predictEmotion),
-                        (40, 40),  cv2.FONT_HERSHEY_SIMPLEX, 0.99,
-                        (255, 255, 0), 2)
-            cv2.imshow('tf-pose-estimation result', image)
-            fps_time = time.time()
-            if cv2.waitKey(1) == 27:
-                break
-            logger.debug('finished+')
-            if u.interrupted:
-                fout.close()
+                logger.debug('show+')
+                cv2.putText(image,
+                            "Frame#{}    FPS: {}    Emotion: {}".format(frame_idx, 1.0 / (time.time() - fps_time), predictEmotion),
+                            (40, 40),  cv2.FONT_HERSHEY_SIMPLEX, 0.99,
+                            (255, 255, 0), 2)
+                cv2.imshow('tf-pose-estimation result', image)
+                fps_time = time.time()
+                if cv2.waitKey(1) == 27:
+                    break
+                logger.debug('finished+')
+                if u.interrupted:
+                    fout.close()
         cv2.destroyAllWindows()
     fout.close()
