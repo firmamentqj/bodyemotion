@@ -8,6 +8,7 @@ import time
 from datetime import datetime
 slim = tf.contrib.slim
 
+'''
 def network_architecture(input, numb_class, is_training, is_reuse, name=None):
     if not name == None:
         with tf.variable_scope(name):
@@ -39,29 +40,24 @@ def network_architecture(input, numb_class, is_training, is_reuse, name=None):
             net = slim.utils.convert_collection_to_dict(('none', 1))
             net['input'] = input
             net['mlp1'] = slim.fully_connected(
-                net['input'], 36, reuse=is_reuse, scope='mlp1' )
+                net['input'], 18, reuse=is_reuse, scope='mlp1' )
             net['mlp2'] = slim.fully_connected(
-                net['mlp1'], 18, reuse=is_reuse, scope='mlp2')
-            net['mlp3'] = slim.fully_connected(
-                net['mlp2'], 9, reuse=is_reuse, scope='mlp3' )
+                net['mlp1'], 9, reuse=is_reuse, scope='mlp2')
             net['logits'] = slim.fully_connected(
-                net['mlp3'], numb_class, activation_fn=None, reuse=is_reuse, scope='logits')
+                net['mlp2'], numb_class, activation_fn=None, reuse=is_reuse, scope='logits')
             net['prediction'] = tf.nn.softmax( net['logits'] )
             return net
     else:
         net = slim.utils.convert_collection_to_dict(('none', 1))
         net['input'] = input
         net['mlp1'] = slim.fully_connected(
-            net['input'], 36, reuse=is_reuse, scope='mlp1')
+            net['input'], 18, reuse=is_reuse, scope='mlp1')
         net['mlp2'] = slim.fully_connected(
-            net['mlp1'], 18, reuse=is_reuse, scope='mlp2')
-        net['mlp3'] = slim.fully_connected(
-            net['mlp2'], 9, reuse=is_reuse, scope='mlp3')
+            net['mlp1'], 9, reuse=is_reuse, scope='mlp2')
         net['logits'] = slim.fully_connected(
-            net['mlp3'], numb_class, activation_fn=None, reuse=is_reuse, scope='logits')
+            net['mlp2'], numb_class, activation_fn=None, reuse=is_reuse, scope='logits')
         net['prediction'] = tf.nn.softmax(net['logits'])
         return net
-'''
 
 class PEMLPNET(object):
     def __init__(self, config, is_reuse, is_train, name=None):
@@ -93,7 +89,7 @@ class PEMLPNET(object):
             self.sess = tf.Session(config=config_proto)
 
             # Create variables and placeholders
-            self.pose = tf.placeholder(tf.float32, [None, 36])
+            self.pose = tf.placeholder(tf.float32, [None, config.input_dim])
             self.label = tf.placeholder(tf.int32, [None])
 
             ## define the network
@@ -136,8 +132,6 @@ class PEMLPNET(object):
             self.is_reuse = is_reuse
             self.network_name = name
 
-            self.pose = tf.placeholder(tf.float32, [None, 36])
-
             # Setup session
             config_proto = tf.ConfigProto()
             config_proto.gpu_options.allow_growth = True
@@ -145,16 +139,13 @@ class PEMLPNET(object):
             self.sess = tf.Session(config=config_proto)
 
             # Create variables and placeholders
-            self.pose = tf.placeholder(tf.float32, [None, 36])
+            self.pose = tf.placeholder(tf.float32, [None, 96])
 
             ## define the network
             self.net = self.load_model()
             var_train = tf.trainable_variables()
             var_restore = [var for var in var_train if self.network_name in var.name]
-            for var in var_restore:
-                print(var.name)
             saver = tf.train.Saver(var_restore)
-            print( self.checkpoint_test_full_path )
             saver.restore(self.sess, self.checkpoint_test_full_path)
         return
 
@@ -271,6 +262,3 @@ class PEMLPNET(object):
         score = self.sess.run(self.net['prediction'], feed_dict=feed_dict)
         predict_label = np.argmax(score)
         predict_emotion = self.CLASS2WORD[predict_label]
-
-        return predict_emotion, np.squeeze(score), self.CLASS2WORD
-

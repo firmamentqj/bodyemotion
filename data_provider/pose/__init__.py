@@ -1,10 +1,67 @@
 import os
 import os.path as op
 import numpy as np
+import math
 
 # This file builds a dataset iterator for training and test
 # IIAI-Tony-Robbins-Body-Language Project
 # Written by Jiaxin Chen
+def calAsymPairiedJointsDistance( matA, matB ):
+    ## return a (12*11/2=66)-d vector containing distance information of an input pose
+    dist = list([])
+    for i in range(matA.shape[0]):
+        for j in range(matB.shape[0]):
+            if( i<j ):
+                dist.append( np.sqrt(np.sum((matA[i]- matB[j])**2)) )
+
+    return np.squeeze( np.array( dist ) )
+
+def calAngle( origin, start_point, end_point ):
+    ## return a real number in the range [0,2*pi]
+    if( (origin[0]<1e-14 and origin[1]<1e-14) or (start_point[0]<1e-14 and start_point[1]<1e-14)  or (end_point[0]<1e-14 and end_point[1]<1e-14) ):
+        return -1
+    vecA = start_point-origin
+    vecB = end_point-origin
+    vecA.astype('float32')
+    vecB.astype('float32')
+    lenA = float(np.sqrt(np.sum(vecA ** 2)))
+    lenB = float(np.sqrt(np.sum(vecB ** 2)))
+    det = vecA[1]*vecB[0]-vecA[0]*vecB[1]
+
+    if(lenA==0) or (lenB==0) :
+        return 0
+    elif( det<0 ):
+        if not (lenA==0):
+            vecA = vecA / (lenA+1e-8)
+        if not (lenB==0):
+            vecB = vecB / (lenB+1e-8)
+        cos = np.dot(vecA, vecB)
+        # print("Here 1")
+        # print(cos)
+        # print( "vecA=[{},{}],vecB=[{},{}]".format( vecA[0], vecA[1], vecB[0], vecB[1] ) )
+        return 2*math.pi - math.acos( cos )
+    else:
+        if not (lenA==0):
+            vecA = vecA / (lenA+1e-8)
+        if not (lenB==0):
+            vecB = vecB / (lenB+1e-8)
+        cos = np.dot(vecA,vecB)
+        # print("Here 2")
+        # print(cos)
+        return math.acos(cos)
+
+def calJointsAngles( Joints ):
+    ## return a 6-d vector containing angle information of an input pose
+    angles = list([])
+    angles.append(calAngle(Joints[1], Joints[0], Joints[5]))
+    angles.append(calAngle(Joints[1], Joints[2], Joints[0]))
+    angles.append(calAngle(Joints[2], Joints[1], Joints[3]))
+    angles.append(calAngle(Joints[3], Joints[2], Joints[4]))
+    angles.append(calAngle(Joints[5], Joints[6], Joints[1]))
+    angles.append(calAngle(Joints[6], Joints[7], Joints[5]))
+
+    return np.squeeze(np.array(angles))
+
 
 class Dataset(object):
     def __init__(self, modal, data_root, path, train=True):
@@ -26,7 +83,15 @@ class Dataset(object):
         path = op.join(self.data_root, self.lines[i].strip().split()[0])
         pose = np.load( path )
         pose = pose[...,0:2]
-        pose = np.reshape( pose, [pose.shape[0]*pose.shape[1]] )
+        ## extract partial poses from upper body
+        pose = pose[[0,1,2,3,4,5,6,7,14,15,16,17]]
+        ## additional information
+        dist = calAsymPairiedJointsDistance( pose, pose )
+        angles = calJointsAngles( pose )
+        ## add additional information
+        pose = np.squeeze(np.reshape(pose, [pose.shape[0] * pose.shape[1]]))
+        #pose = np.concatenate((pose, dist, angles), axis=0)
+
         return pose
 
     def get_label(self, i):

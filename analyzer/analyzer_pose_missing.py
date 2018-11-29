@@ -19,7 +19,7 @@ import models.penet as model
 from models.penet.configuration import configuration as config
 from models.penet.input import Dataset
 
-
+'''
 def computeMissingFreq(pose_datasdt, batch_size):
     numb_batches = int( pose_tr.n_samples / batch_size )
     counter = 0
@@ -65,8 +65,32 @@ for i in range( 1 ):
     plt.ylabel('Percentage of Value Missing (%)')
     plt.grid()
     plt.show()
+'''
+def calAngle( origin, start_point, end_point ):
+    if( (origin[0]<1e-14 and origin[1]<1e-14) or (start_point[0]<1e-14 and start_point[1]<1e-14)  or (end_point[0]<1e-14 and end_point[1]<1e-14) ):
+        return -1
+    vecA = start_point-origin
+    vecB = end_point-origin
+    lenA = np.sqrt(np.sum(vecA ** 2))
+    lenB = np.sqrt(np.sum(vecB ** 2))
+    det = vecA[1]*vecB[0]-vecA[0]*vecB[1]
+
+    if(lenA==0) or (lenB==0) :
+        return 0
+    elif( det<0 ):
+        cos = np.dot(vecA, vecB) / ((lenA * lenB))
+        return 2*math.pi - math.acos( cos )
+    else:
+        cos = np.dot( vecA,vecB ) / ((lenA*lenB))
+        return math.acos(cos)
 
 
-
-
-
+origin = np.array([0.1,0.1])
+start_point = np.array([-0.1,-0.1])+origin
+end_point = np.array([0,-1])+origin
+plt.plot( np.array([origin[0],start_point[0]]), np.array([origin[1],start_point[1]]), 'b>-' )
+plt.plot( np.array([origin[0],end_point[0]]), np.array([origin[1],end_point[1]]), 'g>-' )
+angle = calAngle( origin, start_point, end_point )
+plt.xlabel('%s degrees'%(str(int(math.degrees(angle)))))
+print( '{}'.format(angle) )
+plt.show()

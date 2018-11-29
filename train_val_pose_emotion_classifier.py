@@ -33,7 +33,7 @@ for i in range( numb_splits ):
     acc_avg_validation += acc_validation
 
 acc_avg_validation = acc_avg_validation / numb_splits
-print( 'Mean Cross-validation Classification Accuracy for Pose-Emotion Estimation: %.02f'%(acc_avg_validation) )
+print( 'Mean Cross-validation Classification Accuracy for Pose-Emotion Estimation: %.02f'%(100*acc_avg_validation) )
 
 
 

@@ -10,7 +10,7 @@ dataset = config.dataset
 root_data = config.root_dir
 WORD2CLASS=config.WORD2CLASS
 
-train_val_ratio = 0.5
+train_val_ratio = 0.9
 numb_splits = 10
 ## load data
 folders_seq = os.listdir( op.join(root_data, 'dataset', dataset) )

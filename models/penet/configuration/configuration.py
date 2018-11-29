@@ -21,6 +21,7 @@ exp_dir = op.join( root_dir, 'trainedModels', method )
 
 ## for training
 network_name = 'PENET'
+input_dim = 24
 is_training = True
 is_reuse = False
 batch_size = 64
