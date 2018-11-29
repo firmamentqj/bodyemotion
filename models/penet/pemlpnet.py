@@ -139,7 +139,7 @@ class PEMLPNET(object):
             self.sess = tf.Session(config=config_proto)
 
             # Create variables and placeholders
-            self.pose = tf.placeholder(tf.float32, [None, 96])
+            self.pose = tf.placeholder(tf.float32, [None, config.input_dim])
 
             ## define the network
             self.net = self.load_model()
@@ -262,3 +262,4 @@ class PEMLPNET(object):
         score = self.sess.run(self.net['prediction'], feed_dict=feed_dict)
         predict_label = np.argmax(score)
         predict_emotion = self.CLASS2WORD[predict_label]
+        return predict_emotion, np.squeeze(score), self.CLASS2WORD

@@ -83,13 +83,14 @@ class Dataset(object):
         path = op.join(self.data_root, self.lines[i].strip().split()[0])
         pose = np.load( path )
         pose = pose[...,0:2]
+        pose = np.reshape(pose, [pose.shape[0] * pose.shape[1]])
         ## extract partial poses from upper body
-        pose = pose[[0,1,2,3,4,5,6,7,14,15,16,17]]
+        #pose = pose[[0,1,2,3,4,5,6,7,14,15,16,17]]
         ## additional information
-        dist = calAsymPairiedJointsDistance( pose, pose )
-        angles = calJointsAngles( pose )
+        #dist = calAsymPairiedJointsDistance( pose, pose )
+        #angles = calJointsAngles( pose )
         ## add additional information
-        pose = np.squeeze(np.reshape(pose, [pose.shape[0] * pose.shape[1]]))
+        # pose = np.squeeze(np.reshape(pose, [pose.shape[0] * pose.shape[1]]))
         #pose = np.concatenate((pose, dist, angles), axis=0)
 
         return pose

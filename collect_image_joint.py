@@ -33,9 +33,9 @@ if __name__ == '__main__':
     parser.add_argument('--show-process', type=bool, default=False,
                         help='for debug purpose, if enabled, speed for inference is dropped.')
     parser.add_argument('--person', type=str, default='',
-                        help='01=Jie 02=Jiaxi 03=Ionut')
+                        help='person_id is missing: 01=Jie 02=Jiaxi 03=Ionut')
     parser.add_argument('--emotion', type=str, default='',
-                        help='NE=Neutral, HA=Happy, SA=Sad, FE=Fearful, AN=Angry')
+                        help='NE=Neutral, HA=Happy, SA=Sad, FE=Fearful, AN=Angry, SU=Surprised')
     parser.add_argument('--seqid', type=str, default='')
 
     args = parser.parse_args()
@@ -55,10 +55,11 @@ if __name__ == '__main__':
     body_parts_num = 18
     frame_idx = 0
     image_folder = 'M' + args.person + args.emotion + '_SEQ' + args.seqid
+    # path = './dataset_new'
     ##############################################
 
-    if not os.path.exists('./dataset/' + image_folder):
-        os.mkdir('./dataset/' + image_folder)
+    if not os.path.exists('./dataset_new/' + image_folder):
+        os.mkdir('./dataset_new/' + image_folder)
 
     while True:
         ret_val, image = cam.read()
@@ -89,7 +90,7 @@ if __name__ == '__main__':
         ret_val, image = cam.read()
         # cv2.imshow("capture", image)
         image_idx = '%04d' % frame_idx
-        image_file = os.path.join('./dataset/' + image_folder, image_folder + '_' + image_idx + '.jpg')
+        image_file = os.path.join('./dataset_new/' + image_folder, image_folder + '_' + image_idx + '.jpg')
         cv2.imwrite(image_file, image)
         logger.debug('image process+')
         humans = e.inference(image, resize_to_default=(w > 0 and h > 0), upsample_size=args.resize_out_ratio)

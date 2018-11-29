@@ -20,6 +20,8 @@ def train_val( dataset_train, dataset_validation, is_reuse ):
 def online_test(pose, is_reuse):
     model = PEMLPNET(config, is_reuse, is_train=False, name=config.network_name)
     prediction, score, CLASS2EMOTION = model.test( pose )
-
+    # print(CLASS2EMOTION)
+    # print(score)
+    # print(prediction)
 
     return prediction, score, CLASS2EMOTION
