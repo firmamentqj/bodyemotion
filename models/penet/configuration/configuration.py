@@ -18,7 +18,8 @@ dataset = 'IIAI-Body-Emotion2'
 method = 'penet'
 numb_class = len(WORD2CLASS)
 ## path
-root_dir = '/Users/cjx/PycharmProjects/bodyemotion'
+## root_dir = '/Users/cjx/PycharmProjects/bodyemotion'
+root_dir = '/Users/nigel/PycharmProjects/tf-openpose'
 exp_dir = op.join( root_dir, 'trainedModels', method )
 
 ## for training
